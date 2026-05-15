@@ -28,3 +28,8 @@ examples/exp*/
 .claude/
 *.wav
 *.jsonl
+
+# Python virtual environment
+venv/
+env/
+.venv/

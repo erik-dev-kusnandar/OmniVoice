@@ -1,0 +1,11 @@
+INFO:     Started server process [712115]
+INFO:     Waiting for application startup.
+INFO:__main__:Loading OmniVoice model from k2-fsa/OmniVoice on cuda:0...
+Loading weights:   0%|          | 0/313 [00:00<?, ?it/s]Loading weights:   1%|▏         | 4/313 [00:00<00:44,  6.97it/s]Loading weights:  57%|█████▋    | 177/313 [00:00<00:00, 350.33it/s]Loading weights:  89%|████████▉ | 279/313 [00:00<00:00, 382.11it/s]Loading weights: 100%|██████████| 313/313 [00:00<00:00, 317.70it/s]
+Fetching 13 files:   0%|          | 0/13 [00:00<?, ?it/s]Fetching 13 files:   8%|▊         | 1/13 [00:00<00:03,  3.75it/s]Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+WARNING:huggingface_hub.utils._http:Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+Fetching 13 files:  69%|██████▉   | 9/13 [00:00<00:00, 18.95it/s]Fetching 13 files: 100%|██████████| 13/13 [00:00<00:00, 21.12it/s]
+Loading weights:   0%|          | 0/527 [00:00<?, ?it/s]Loading weights:  25%|██▌       | 134/527 [00:00<00:00, 1332.65it/s]Loading weights:  51%|█████     | 268/527 [00:00<00:00, 600.29it/s] Loading weights:  68%|██████▊   | 360/527 [00:00<00:00, 681.12it/s]Loading weights:  84%|████████▍ | 445/527 [00:00<00:00, 645.06it/s]Loading weights:  98%|█████████▊| 519/527 [00:00<00:00, 626.24it/s]Loading weights: 100%|██████████| 527/527 [00:00<00:00, 663.74it/s]
+INFO:__main__:OmniVoice Model loaded successfully! ✅
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://0.0.0.0:8001 (Press CTRL+C to quit)
