@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Navigasi ke folder OmniVoice
-cd /home/ubuntu/OmniVoice
+cd /home/ubuntu/OmniCastPro/OmniVoice
 
 # Aktifkan virtual environment
 if [ -f "venv/bin/activate" ]; then

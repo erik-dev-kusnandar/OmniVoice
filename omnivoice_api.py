@@ -4,7 +4,7 @@ import numpy as np
 import logging
 import uuid
 from pathlib import Path
-from fastapi import FastAPI, HTTPException, Response
+from fastapi import FastAPI, HTTPException, Response, UploadFile, File, Form
 from pydantic import BaseModel
 import scipy.io.wavfile as wavfile
 from typing import Optional, List
@@ -33,6 +33,10 @@ generation_history: List[dict] = []
 # Output directory for persistent audio files
 OUTPUT_DIR = Path("outputs")
 OUTPUT_DIR.mkdir(exist_ok=True)
+
+# Upload directory for temporary uploaded audio files
+UPLOAD_DIR = Path("uploads")
+UPLOAD_DIR.mkdir(exist_ok=True)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -63,6 +67,11 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+class GenerateUploadResponse(BaseModel):
+    success: bool
+    audio_url: str
+    play_url: str
 
 class GenerateRequest(BaseModel):
     text: str
@@ -229,6 +238,66 @@ async def process_generation(
     except Exception as e:
         logger.error(f"Generation error: {e}")
         raise HTTPException(500, str(e))
+
+@app.post("/generate/upload", response_model=GenerateUploadResponse)
+async def generate_with_upload(
+    text: str = Form(..., description="Teks yang akan diucapkan"),
+    ref_audio: UploadFile = File(..., description="File audio referensi untuk voice cloning (wav/mp3/m4a)"),
+    ref_text: Optional[str] = Form(None, description="Transkrip dari audio referensi (opsional, kosongkan jika tidak ada)"),
+    instruct: Optional[str] = Form(None, description="Deskripsi suara: female/male/whisper/dll (opsional, kosongkan jika tidak pakai)"),
+    language: Optional[str] = Form("id", description="Bahasa: id, en, zh, ja"),
+    speed: float = Form(1.0, description="Kecepatan bicara (0.5-2.0)"),
+    num_step: int = Form(32, description="Jumlah langkah decoding (16=cepat, 32=berkualitas)"),
+    guidance_scale: float = Form(2.0, description="CFG guidance scale"),
+):
+    if not model:
+        raise HTTPException(503, "Model not loaded")
+
+    # Bersihkan input: jika isinya "string" atau kosong, anggap None
+    if ref_text and ref_text.strip().lower() in ("", "string", "none"):
+        ref_text = None
+    if instruct and instruct.strip().lower() in ("", "string", "none"):
+        instruct = None
+
+    # Save uploaded file to uploads directory
+    file_ext = Path(ref_audio.filename).suffix if ref_audio.filename else ".wav"
+    upload_id = str(uuid.uuid4())
+    upload_path = UPLOAD_DIR / f"{upload_id}{file_ext}"
+
+    content = await ref_audio.read()
+    with open(upload_path, "wb") as f:
+        f.write(content)
+
+    try:
+        _, filename = await process_generation(
+            text=text,
+            language=language,
+            ref_audio_path=str(upload_path),
+            ref_text=ref_text,
+            speed=speed,
+            num_step=num_step,
+            guidance_scale=guidance_scale,
+            instruct=instruct,
+        )
+
+        audio_url = f"/outputs/{filename}"
+
+        generation_history.append({
+            "id": filename.replace(".wav", ""),
+            "text": text,
+            "language": language,
+            "audio_url": audio_url,
+            "timestamp": logging.Formatter().formatTime(logging.LogRecord("", 0, "", 0, "", "", None, None)),
+        })
+
+        return {
+            "success": True,
+            "audio_url": audio_url,
+            "play_url": f"http://localhost:8001{audio_url}",
+        }
+    finally:
+        if upload_path.exists():
+            upload_path.unlink()
 
 @app.get("/generate")
 async def list_history():
