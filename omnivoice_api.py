@@ -40,7 +40,7 @@ UPLOAD_DIR.mkdir(exist_ok=True)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    global model
+    global model, device
     # Cap VRAM usage so MuseTalk (sharing the same GPU) still has room.
     # RTX 5060 Ti 16GB: omnivoice max ~6.4GB, leaving ~9.5GB for musetalk.
     mem_fraction = float(os.getenv("OMNIVOICE_MEM_FRACTION", "0.4"))
