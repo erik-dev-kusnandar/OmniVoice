@@ -41,6 +41,13 @@ UPLOAD_DIR.mkdir(exist_ok=True)
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     global model
+    # Cap VRAM usage so MuseTalk (sharing the same GPU) still has room.
+    # RTX 5060 Ti 16GB: omnivoice max ~6.4GB, leaving ~9.5GB for musetalk.
+    mem_fraction = float(os.getenv("OMNIVOICE_MEM_FRACTION", "0.4"))
+    if device.startswith("cuda") and mem_fraction < 1.0:
+        gpu_index = int(device.split(":")[1]) if ":" in device else 0
+        torch.cuda.set_per_process_memory_fraction(mem_fraction, gpu_index)
+        logger.info(f"GPU memory capped at {mem_fraction:.0%} of GPU {gpu_index}")
     checkpoint = os.getenv("OMNIVOICE_MODEL", "k2-fsa/OmniVoice")
     logger.info(f"Loading OmniVoice model from {checkpoint} on {device}...")
     model = OmniVoice.from_pretrained(
