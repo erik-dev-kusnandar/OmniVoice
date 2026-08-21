@@ -197,6 +197,12 @@ async def process_generation(
                 ref_audio=ref_audio_path,
                 ref_text=ref_text
             )
+        elif ref_audio_path:
+            logger.warning(
+                f"ref_audio_path NOT FOUND: {ref_audio_path}! "
+                "Falling back to DEFAULT voice (male). "
+                "Use POST /generate/upload (multipart) instead of sending paths."
+            )
         
         if instruct:
             kw["instruct"] = instruct
