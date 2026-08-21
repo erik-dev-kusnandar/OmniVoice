@@ -23,8 +23,8 @@ logger = logging.getLogger(__name__)
 
 # Global model & device config
 model = None
-# Force to CPU to save VRAM (OmniVoice needs ~10GB on GPU)
-device = "cuda:0" 
+# Device is configurable: OMNIVOICE_DEVICE=cpu to save VRAM for MuseTalk.
+device = os.getenv("OMNIVOICE_DEVICE", "cuda:0")
 model_lock = asyncio.Lock()
 
 # Simple in-memory history
@@ -44,16 +44,19 @@ async def lifespan(app: FastAPI):
     # Cap VRAM usage so MuseTalk (sharing the same GPU) still has room.
     # RTX 5060 Ti 16GB: omnivoice max ~6.4GB, leaving ~9.5GB for musetalk.
     mem_fraction = float(os.getenv("OMNIVOICE_MEM_FRACTION", "0.4"))
-    if device.startswith("cuda") and mem_fraction < 1.0:
+    if device.startswith("cuda") and torch.cuda.is_available() and mem_fraction < 1.0:
         gpu_index = int(device.split(":")[1]) if ":" in device else 0
         torch.cuda.set_per_process_memory_fraction(mem_fraction, gpu_index)
         logger.info(f"GPU memory capped at {mem_fraction:.0%} of GPU {gpu_index}")
+    elif device.startswith("cuda") and not torch.cuda.is_available():
+        logger.warning("CUDA not available in this container, falling back to CPU")
+        device = "cpu"
     checkpoint = os.getenv("OMNIVOICE_MODEL", "k2-fsa/OmniVoice")
     logger.info(f"Loading OmniVoice model from {checkpoint} on {device}...")
     model = OmniVoice.from_pretrained(
         checkpoint,
         device_map=device,
-        dtype=torch.float16,
+        dtype=torch.float16 if device.startswith("cuda") else torch.float32,
         load_asr=False # Disable ASR to save 2-3GB VRAM
     )
     logger.info("OmniVoice Model loaded successfully! ✅")
